@@ -28,6 +28,7 @@ import java.util.*
 class FirstFragment() : Fragment(), DataHandlerInterface {
     private val log: Logger = LoggerFactory.getLogger(FirstFragment::class.java)
     private var timetable: Timetable? = null
+
     // VIEWS
     private var emptyView: TextView? = null
     var recyclerView: RecyclerView? = null
@@ -69,7 +70,7 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
 
     }
 
-    private fun updateViews(timetable: Timetable?) {
+    internal fun updateViews(timetable: Timetable?) {
         if (timetable != null) {
             directionInfo?.apply { text = timetable!!.message }
             if (timetable.tramsFound) {
@@ -90,8 +91,7 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
 
     }
 
-    private fun loadData(dataDownloadCallback: DataDownloadCallback) {
-
+    internal fun loadData(dataDownloadCallback: DataDownloadCallback) {
         try {
             service?.getForecast("forecast", stop, false)
                 ?.enqueue(object : retrofit2.Callback<ResponseBody> {
@@ -123,7 +123,6 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
             dataDownloadCallback.onError(c)
         }
     }
-
 
     private fun seeOutbound(): Boolean {
 
