@@ -7,7 +7,7 @@ import com.fcossetta.retail.dao.Tram
 import java.util.ArrayList
 
 
-class TrainAdapter(private val list: ArrayList<Tram>, private val from: String) :
+class TrainAdapter(private val list: ArrayList<Tram>, private val from: String?) :
     RecyclerView.Adapter<TramHolder>() {
 
 
@@ -18,7 +18,9 @@ class TrainAdapter(private val list: ArrayList<Tram>, private val from: String) 
 
     override fun onBindViewHolder(holder: TramHolder, position: Int) {
         val tram: Tram = list[position]
-        holder.bind(tram, from)
+        if (from != null) {
+            holder.bind(tram, from)
+        }
     }
 
     override fun getItemCount(): Int = list.size

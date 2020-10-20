@@ -33,7 +33,6 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
     private var emptyView: TextView? = null
     var recyclerView: RecyclerView? = null
     var directionInfo: TextView? = null
-    var fromStation: String? = null
     var stop: String = "sti"
     var seeOutbound = false
     private var service: RetailService? = null
@@ -51,11 +50,9 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
         directionInfo = view.findViewById(R.id.direction_info)
         emptyView = view.findViewById(R.id.empty_view)
         service = NetworkManager.mInstance.getService()
-        fromStation = getString(R.string.stil)
         seeOutbound = seeOutbound()
         if (seeOutbound) {
             stop = "mar"
-            fromStation = getString(R.string.mar)
         }
         loadData(object : DataDownloadCallback {
             override fun onDataDownloaded(stops: Timetable?) {
@@ -79,7 +76,7 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
                 emptyView?.apply { text = null }
                 recyclerView?.apply {
                     layoutManager = LinearLayoutManager(activity)
-                    adapter = TrainAdapter(timetable!!.trams, fromStation!!)
+                    adapter = TrainAdapter(timetable.trams, timetable.stopname)
                 }
             } else {
                 emptyView?.visibility = View.VISIBLE

@@ -17,7 +17,24 @@ class XmlParser {
         val mInstance = XmlParser()
     }
 
-    fun getTitle(message: String): String? {
+    private fun getStationName(message: String): String? {
+        val parser: XmlPullParser = Xml.newPullParser()
+        parser.setInput(StringReader(message))
+        parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+        while (parser.next() != XmlPullParser.END_DOCUMENT) {
+            if (parser.name.equals("stopInfo")) {
+                val stopName = parser.getAttributeValue(
+                    null,
+                    "stop"
+                )
+                return stopName
+            }
+
+        }
+        return null
+    }
+
+    private fun getTitle(message: String): String? {
         val parser: XmlPullParser = Xml.newPullParser()
         var title = String()
         parser.setInput(StringReader(message))
@@ -43,19 +60,21 @@ class XmlParser {
     fun parseOutbound(message: String): Timetable {
         val parseTrains = parseTrains(message, "Outbound")
         val title = getTitle(message)
+        val stationName = getStationName(message)
         if (parseTrains.size == 1 && parseTrains[0].duemins == null) {
-            return Timetable(title, parseTrains, false, parseTrains[0].destination)
+            return Timetable(stationName, title, parseTrains, false, parseTrains[0].destination)
         }
-        return Timetable(title, parseTrains, true, null)
+        return Timetable(stationName, title, parseTrains, true, null)
     }
 
     fun parseInbound(message: String): Timetable {
         val parseTrains = parseTrains(message, "Inbound")
         val title = getTitle(message)
+        val stationName = getStationName(message)
         if (parseTrains.size == 1 && parseTrains[0].duemins == null) {
-            return Timetable(title, parseTrains, false, parseTrains[0].destination)
+            return Timetable(stationName, title, parseTrains, false, parseTrains[0].destination)
         }
-        return Timetable(title, parseTrains, true, null)
+        return Timetable(stationName, title, parseTrains, true, null)
     }
 
     private fun parseTrains(message: String, direction: String): ArrayList<Tram> {
@@ -63,16 +82,10 @@ class XmlParser {
         try {
             val parser: XmlPullParser = Xml.newPullParser()
             var addData = false
-            var title: String
             parser.setInput(StringReader(message))
             parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
             while (parser.next() != XmlPullParser.END_DOCUMENT) {
-                if (parser.name.equals("message", false)) {
-                    val text = parser.text
-                    if (text != null) {
-                        title = text
-                    }
-                }
+
                 val directionFound = parser.name.equals("direction", false)
                 if (directionFound) {
                     val directionName = parser.getAttributeValue(
