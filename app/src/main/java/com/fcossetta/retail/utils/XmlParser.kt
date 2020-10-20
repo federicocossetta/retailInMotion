@@ -4,13 +4,10 @@ import android.util.Log
 import android.util.Xml
 import com.fcossetta.retail.dao.Timetable
 import com.fcossetta.retail.dao.Tram
-import kotlinx.coroutines.channels.ticker
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 import org.xmlpull.v1.XmlPullParser
-import java.io.BufferedReader
 import java.io.StringReader
-import java.sql.Time
 
 
 class XmlParser {
@@ -24,16 +21,15 @@ class XmlParser {
         val parser: XmlPullParser = Xml.newPullParser()
         var title = String()
         parser.setInput(StringReader(message))
-        log.error(message)
         parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
         var messageFound = false
         while (parser.next() != XmlPullParser.END_DOCUMENT) {
 
             if (!messageFound)
-                messageFound = parser.name == "message" && parser.eventType == XmlPullParser.START_TAG
+                messageFound =
+                    parser.name == "message" && parser.eventType == XmlPullParser.START_TAG
             if (messageFound && parser.eventType != XmlPullParser.END_TAG) {
                 val text = parser.text
-                log.error("text {}", text)
                 if (text != null) {
                     title = text
                     break
@@ -47,14 +43,19 @@ class XmlParser {
     fun parseOutbound(message: String): Timetable {
         val parseTrains = parseTrains(message, "Outbound")
         val title = getTitle(message)
-        return Timetable(title, parseTrains)
+        if (parseTrains.size == 1 && parseTrains[0].duemins == null) {
+            return Timetable(title, parseTrains, false, parseTrains[0].destination)
+        }
+        return Timetable(title, parseTrains, true, null)
     }
 
     fun parseInbound(message: String): Timetable {
         val parseTrains = parseTrains(message, "Inbound")
         val title = getTitle(message)
-
-        return Timetable(title, parseTrains)
+        if (parseTrains.size == 1 && parseTrains[0].duemins == null) {
+            return Timetable(title, parseTrains, false, parseTrains[0].destination)
+        }
+        return Timetable(title, parseTrains, true, null)
     }
 
     private fun parseTrains(message: String, direction: String): ArrayList<Tram> {
@@ -70,7 +71,6 @@ class XmlParser {
                     val text = parser.text
                     if (text != null) {
                         title = text
-                        log.error("titlee {}", title)
                     }
                 }
                 val directionFound = parser.name.equals("direction", false)
@@ -96,7 +96,14 @@ class XmlParser {
 
 
     private fun getTrain(parser: XmlPullParser): Tram {
-        val dueMins = parser.getAttributeValue(null, "dueMins")
+        var dueMins: String? = null
+        if (parser.getAttributeValue(null, "dueMins") != null && parser.getAttributeValue(
+                null,
+                "dueMins"
+            ).isNotEmpty()
+        ) {
+            dueMins = parser.getAttributeValue(null, "dueMins")
+        }
         val destination = parser.getAttributeValue(null, "destination")
         return Tram(dueMins, destination)
     }

@@ -2,10 +2,9 @@ package com.fcossetta.retail
 
 import android.os.Bundle
 import android.util.Log
+import android.view.View
 import androidx.appcompat.app.AppCompatActivity
-import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentTransaction
-import androidx.recyclerview.widget.RecyclerView
 import com.fcossetta.retail.network.NetworkManager
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import org.slf4j.Logger
@@ -21,7 +20,7 @@ class MainActivity : AppCompatActivity() {
             setContentView(R.layout.activity_main)
             setSupportActionBar(findViewById(R.id.toolbar))
             findViewById<FloatingActionButton>(R.id.fab).setOnClickListener { view ->
-                reloadTimetable()
+                reloadTimetable(view)
             }
             loadFragmentMain()
         } catch (c: Exception) {
@@ -35,8 +34,8 @@ class MainActivity : AppCompatActivity() {
         fragmentTransaction.replace(R.id.flContent, fragment!!).commit()
     }
 
-    private fun reloadTimetable() {
-        fragment?.reloadData()
+    private fun reloadTimetable(button: View) {
+        fragment?.reloadData(button)
     }
 
 }

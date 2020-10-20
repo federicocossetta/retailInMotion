@@ -10,17 +10,20 @@ import com.fcossetta.retail.dao.Tram
 class TramHolder(inflater: LayoutInflater, parent: ViewGroup) :
     RecyclerView.ViewHolder(inflater.inflate(R.layout.list_item, parent, false)) {
     private var destinationTextView: TextView? = null
-    private var dueminsTextView: TextView? = null
+    private var forecast: TextView? = null
+    private var from: TextView? = null
 
 
     init {
         destinationTextView = itemView.findViewById(R.id.destination)
-        dueminsTextView = itemView.findViewById(R.id.duemins)
+        forecast = itemView.findViewById(R.id.duemins)
+        from = itemView.findViewById(R.id.from)
     }
 
-    fun bind(tram: Tram) {
-        destinationTextView?.text = tram.destionation
-        dueminsTextView?.text = tram.duemins
+    fun bind(tram: Tram, fromStation: String) {
+        destinationTextView?.text = tram.destination
+        forecast?.text = tram.duemins
+        from?.text = fromStation
     }
 
 }

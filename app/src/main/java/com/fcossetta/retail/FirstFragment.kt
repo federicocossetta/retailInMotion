@@ -6,6 +6,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -13,6 +14,7 @@ import com.fcossetta.retail.dao.Timetable
 import com.fcossetta.retail.network.NetworkManager
 import com.fcossetta.retail.network.RetailService
 import com.fcossetta.retail.ui.TrainAdapter
+import com.fcossetta.retail.utils.DataDownloadCallback
 import com.fcossetta.retail.utils.DataHandlerInterface
 import com.fcossetta.retail.utils.XmlParser
 import okhttp3.ResponseBody
@@ -26,9 +28,13 @@ import java.util.*
 class FirstFragment() : Fragment(), DataHandlerInterface {
     private val log: Logger = LoggerFactory.getLogger(FirstFragment::class.java)
     private var timetable: Timetable? = null
+    // VIEWS
+    private var emptyView: TextView? = null
     var recyclerView: RecyclerView? = null
     var directionInfo: TextView? = null
-    var title: TextView? = null
+    var fromStation: String? = null
+    var stop: String = "sti"
+    var seeOutbound = false
     private var service: RetailService? = null
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
@@ -42,24 +48,50 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
         super.onViewCreated(view, savedInstanceState)
         recyclerView = view.findViewById(R.id.recycler_timetable)
         directionInfo = view.findViewById(R.id.direction_info)
-        title = view.findViewById(R.id.direction_title)
+        emptyView = view.findViewById(R.id.empty_view)
         service = NetworkManager.mInstance.getService()
-        loadData()
-        if(seeOutbound())
-            title?.apply { text = getText(R.string.outbound) }
-        else
-            title?.apply { text = getText(R.string.inbound) }
+        fromStation = getString(R.string.stil)
+        seeOutbound = seeOutbound()
+        if (seeOutbound) {
+            stop = "mar"
+            fromStation = getString(R.string.mar)
+        }
+        loadData(object : DataDownloadCallback {
+            override fun onDataDownloaded(stops: Timetable?) {
+                updateViews(timetable)
+            }
+
+            override fun onError(t: Throwable) {
+                log.error(Log.getStackTraceString(t))
+            }
+
+        })
 
     }
 
-    private fun loadData() {
-        val rightNow: Calendar =
-            Calendar.getInstance() // return the hour in 24 hrs format (ranging from 0-23)
-        var stop = "sti"
-        val seeOutbound = seeOutbound()
-        if (seeOutbound) {
-            stop = "mar"
+    private fun updateViews(timetable: Timetable?) {
+        if (timetable != null) {
+            directionInfo?.apply { text = timetable!!.message }
+            if (timetable.tramsFound) {
+                recyclerView?.visibility = View.VISIBLE
+                emptyView?.visibility = View.INVISIBLE
+                emptyView?.apply { text = null }
+                recyclerView?.apply {
+                    layoutManager = LinearLayoutManager(activity)
+                    adapter = TrainAdapter(timetable!!.trams, fromStation!!)
+                }
+            } else {
+                emptyView?.visibility = View.VISIBLE
+                emptyView?.apply { text = timetable.emptyServiceMessage }
+                recyclerView?.visibility = View.INVISIBLE
+            }
+
         }
+
+    }
+
+    private fun loadData(dataDownloadCallback: DataDownloadCallback) {
+
         try {
             service?.getForecast("forecast", stop, false)
                 ?.enqueue(object : retrofit2.Callback<ResponseBody> {
@@ -77,23 +109,18 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
                             } else
                                 timetable =
                                     XmlParser.mInstance.parseInbound(string)
+                            dataDownloadCallback.onDataDownloaded(timetable)
 
-
-                            directionInfo?.apply { text = timetable!!.message }
-                            recyclerView?.apply {
-                                layoutManager = LinearLayoutManager(activity)
-                                adapter = TrainAdapter(timetable!!.trams)
-                            }
                         }
                     }
 
                     override fun onFailure(call: Call<ResponseBody>, t: Throwable) {
-                        log.error(Log.getStackTraceString(t))
+                        dataDownloadCallback.onError(t)
                     }
 
                 })
         } catch (c: Exception) {
-            log.error(Log.getStackTraceString(c))
+            dataDownloadCallback.onError(c)
         }
     }
 
@@ -110,9 +137,21 @@ class FirstFragment() : Fragment(), DataHandlerInterface {
     }
 
 
-    override fun reloadData() {
-        loadData()
-    }
+    override fun reloadData(view: View) {
+        view.isEnabled = false
+        loadData(object : DataDownloadCallback {
+            override fun onDataDownloaded(stops: Timetable?) {
+                updateViews(timetable)
+                Toast.makeText(activity?.applicationContext, R.string.reloaded, Toast.LENGTH_SHORT)
+                    .show()
+                view.isEnabled = true
+            }
 
+            override fun onError(t: Throwable) {
+                log.error(Log.getStackTraceString(t))
+                view.isEnabled = true
+            }
+        })
+    }
 
 }
